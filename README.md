@@ -12,68 +12,66 @@ A production-grade restaurant reservation backend system built with Spring Boot,
 
 ## 🚀 Key Highlights
 
-* Scalable layered architecture (Controller → Service → Repository)
-* JWT Authentication with Access & Refresh Tokens
-* Role-Based Authorization (ADMIN / USER)
-* Concurrency-safe reservation system (Pessimistic Locking)
-* Double booking prevention
-* Table availability search based on time range
-* Pagination support for scalable APIs
-* Global exception handling with standardized responses
-* Clean DTO mapping and separation of concerns
-* Stateless and secure backend design
+- Scalable layered architecture (Controller → Service → Repository)
+- JWT Authentication with Access & Refresh Tokens
+- Role-Based Authorization (ADMIN / USER)
+- Concurrency-safe reservation system (Pessimistic Locking)
+- Double booking prevention
+- Table availability search based on time range
+- Pagination support for scalable APIs
+- Global exception handling with standardized responses
+- Clean DTO mapping and separation of concerns
+- Stateless and secure backend design
 
 ---
 
 ## 🧠 Production Improvements
 
-The system includes real-world backend safeguards to ensure consistency and reliability:
-
-* Validation of reservation time ranges
-* Prevention of overlapping reservations
-* Table capacity validation
-* Ownership validation (users access only their reservations)
-* Safe cancellation handling
-* Defensive programming against invalid input
-* Database-level locking to prevent race conditions
-* Consistent error handling using custom exceptions
+- Validation of reservation time ranges
+- Prevention of overlapping reservations
+- Table capacity validation
+- Ownership validation (users access only their reservations)
+- Safe cancellation handling
+- Defensive programming against invalid input
+- Database-level locking to prevent race conditions
+- Consistent error handling using custom exceptions
 
 ---
 
 ## 📊 Business Rules
 
-* A user can only access and manage their own reservations
-* Reservations cannot overlap on the same table
-* Reservation time must be valid (start < end)
-* Number of guests must not exceed table capacity
-* Only active reservations (PENDING, CONFIRMED) block time slots
-* A reservation can only be cancelled once
-* Table availability is dynamically calculated based on time range
+- A user can only access and manage their own reservations
+- Reservations cannot overlap on the same table
+- Reservation time must be valid (start < end)
+- Number of guests must not exceed table capacity
+- Only active reservations (PENDING, CONFIRMED) block time slots
+- A reservation can only be cancelled once
+- Table availability is dynamically calculated based on time range
 
 ---
 
 ## 🔄 Core Business Flows
 
-* User authenticates using JWT
-* User checks available tables for a time range
-* User creates reservation
-* System validates availability and locks table
-* Reservation is stored safely without conflicts
-* User can view or cancel their reservations
+- User authenticates using JWT
+- User checks available tables for a time range
+- User creates reservation
+- System validates availability and locks table
+- Reservation is stored safely without conflicts
+- User can view or cancel their reservations
 
 ---
 
 ## 🧰 Tech Stack
 
-* Java 21+
-* Spring Boot
-* Spring Data JPA
-* Spring Security
-* JWT
-* MySQL
-* Maven
-* Lombok
-* Swagger (OpenAPI)
+- Java 21+
+- Spring Boot
+- Spring Data JPA
+- Spring Security
+- JWT
+- MySQL
+- Maven
+- Lombok
+- Swagger (OpenAPI)
 
 ---
 
@@ -172,8 +170,8 @@ GET	/admin/restaurants/{id}/tables	Get tables (paginated)
 POST	/admin/tables	Create table (ADMIN)
 
 
-
 ---
+
 ## 🗄️ Database Design
 
 <p align="center">
@@ -220,4 +218,3 @@ Monitoring & logging (ELK / Grafana)
 
 Mahmoud
 Backend Developer | Spring Boot
-
