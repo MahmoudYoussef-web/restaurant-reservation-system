@@ -51,52 +51,48 @@ public class GlobalExceptionHandler {
         return ResponseEntity.badRequest().body(response);
     }
 
-    @ExceptionHandler(Exception.class)
-    public ResponseEntity<ApiErrorResponse> handleGenericException(
-            Exception ex,
-            HttpServletRequest request
-    ) {
-        String path = request.getRequestURI();
-
-        if (path.startsWith("/v3/api-docs") || path.startsWith("/swagger-ui")) {
-            throw new RuntimeException(ex);
-        }
-
-        ApiErrorResponse response = new ApiErrorResponse(
-                500,
-                "Internal server error",
-                "INTERNAL_ERROR",
-                path
-        );
-
-        return ResponseEntity.internalServerError().body(response);
-    }
     @ExceptionHandler(org.springframework.security.authentication.BadCredentialsException.class)
     public ResponseEntity<ApiErrorResponse> handleBadCredentials(
-            org.springframework.security.authentication.BadCredentialsException ex,
             HttpServletRequest request
     ) {
         ApiErrorResponse response = new ApiErrorResponse(
                 401,
                 "Invalid email or password",
-                "UNAUTHORIZED",
+                "INVALID_CREDENTIALS",
                 request.getRequestURI()
         );
 
         return ResponseEntity.status(401).body(response);
     }
+
     @ExceptionHandler(org.springframework.security.core.AuthenticationException.class)
     public ResponseEntity<ApiErrorResponse> handleAuthException(
-            org.springframework.security.core.AuthenticationException ex,
             HttpServletRequest request
     ) {
         ApiErrorResponse response = new ApiErrorResponse(
                 401,
                 "Authentication failed",
-                "UNAUTHORIZED",
+                "AUTHENTICATION_FAILED",
                 request.getRequestURI()
         );
 
         return ResponseEntity.status(401).body(response);
+    }
+
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity<ApiErrorResponse> handleGenericException(
+            Exception ex,
+            HttpServletRequest request
+    ) {
+        ex.printStackTrace();
+
+        ApiErrorResponse response = new ApiErrorResponse(
+                500,
+                "Internal server error",
+                "INTERNAL_ERROR",
+                request.getRequestURI()
+        );
+
+        return ResponseEntity.internalServerError().body(response);
     }
 }
