@@ -24,6 +24,20 @@ public interface ReservationRepository extends JpaRepository<Reservation, Long> 
             List<ReservationStatus> statuses
     );
 
+    @Query("""
+        SELECT r.table.id FROM Reservation r
+        WHERE r.table.restaurant.id = :restaurantId
+        AND r.startTime < :endTime
+        AND r.endTime > :startTime
+        AND r.status IN :statuses
+    """)
+    List<Long> findConflictingTableIds(
+            Long restaurantId,
+            Instant startTime,
+            Instant endTime,
+            List<ReservationStatus> statuses
+    );
+
     List<Reservation> findByUserId(Long userId);
 
     List<Reservation> findByTableId(Long tableId);

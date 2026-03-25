@@ -5,6 +5,8 @@ import com.mahmoud.reservation.dto.reservation.CreateReservationRequest;
 import com.mahmoud.reservation.dto.reservation.ReservationResponse;
 import com.mahmoud.reservation.security.user.ShopUserDetails;
 import com.mahmoud.reservation.service.reservation.ReservationService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -22,12 +24,15 @@ public class ReservationController {
 
     private final ReservationService reservationService;
 
+    @Operation(summary = "Create reservation")
+    @ApiResponse(responseCode = "201", description = "Reservation created successfully")
     @PostMapping
     public ResponseEntity<ReservationResponse> createReservation(
             @Valid @RequestBody CreateReservationRequest request
     ) {
         Long userId = getCurrentUserId();
         ReservationResponse response = reservationService.createReservation(request, userId);
+
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
