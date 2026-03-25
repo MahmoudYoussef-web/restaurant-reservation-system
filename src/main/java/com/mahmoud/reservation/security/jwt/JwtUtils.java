@@ -9,6 +9,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.stereotype.Component;
 
+import java.nio.charset.StandardCharsets;
 import java.security.Key;
 import java.util.Date;
 import java.util.List;
@@ -24,7 +25,7 @@ public class JwtUtils {
     private long expiration;
 
     private Key key() {
-        return Keys.hmacShaKeyFor(jwtSecret.getBytes());
+        return Keys.hmacShaKeyFor(jwtSecret.getBytes(StandardCharsets.UTF_8));
     }
 
     public String generateToken(Authentication authentication) {
@@ -37,14 +38,13 @@ public class JwtUtils {
                 .toList();
 
         Date now = new Date();
-        Date expiry = new Date(now.getTime() + expiration);
 
         return Jwts.builder()
                 .setSubject(user.getUsername())
                 .claim("id", user.getId())
                 .claim("roles", roles)
                 .setIssuedAt(now)
-                .setExpiration(expiry)
+                .setExpiration(new Date(now.getTime() + expiration))
                 .signWith(key(), SignatureAlgorithm.HS256)
                 .compact();
     }

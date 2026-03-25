@@ -25,45 +25,31 @@ public class AuthTokenFilter extends OncePerRequestFilter {
                                     FilterChain filterChain)
             throws ServletException, IOException {
 
-        System.out.println("=== FILTER START ===");
-
-        String jwt = parseJwt(request);
-        System.out.println("JWT: " + jwt);
-
         try {
-            if (jwt != null) {
+            String jwt = parseJwt(request);
 
-                boolean valid = jwtUtils.validate(jwt);
-                System.out.println("VALID: " + valid);
+            if (jwt != null && jwtUtils.validate(jwt)) {
 
-                if (valid) {
-                    String email = jwtUtils.extractUsername(jwt);
-                    System.out.println("EMAIL: " + email);
+                String email = jwtUtils.extractUsername(jwt);
 
-                    var userDetails = userDetailsService.loadUserByUsername(email);
+                var userDetails = userDetailsService.loadUserByUsername(email);
 
-                    var authentication = new UsernamePasswordAuthenticationToken(
-                            userDetails,
-                            null,
-                            userDetails.getAuthorities()
-                    );
+                var authentication = new UsernamePasswordAuthenticationToken(
+                        userDetails,
+                        null,
+                        userDetails.getAuthorities()
+                );
 
-                    authentication.setDetails(
-                            new WebAuthenticationDetailsSource().buildDetails(request)
-                    );
+                authentication.setDetails(
+                        new WebAuthenticationDetailsSource().buildDetails(request)
+                );
 
-                    SecurityContextHolder.getContext().setAuthentication(authentication);
-
-                    System.out.println("AUTH SET SUCCESS");
-                }
+                SecurityContextHolder.getContext().setAuthentication(authentication);
             }
 
         } catch (Exception ex) {
-            ex.printStackTrace();
             SecurityContextHolder.clearContext();
         }
-
-        System.out.println("=== FILTER END ===");
 
         filterChain.doFilter(request, response);
     }
@@ -71,10 +57,10 @@ public class AuthTokenFilter extends OncePerRequestFilter {
     private String parseJwt(HttpServletRequest request) {
         String header = request.getHeader("Authorization");
 
-        if (header == null || !header.startsWith("Bearer ")) {
-            return null;
+        if (header != null && header.startsWith("Bearer ")) {
+            return header.substring(7);
         }
 
-        return header.substring(7);
+        return null;
     }
 }
