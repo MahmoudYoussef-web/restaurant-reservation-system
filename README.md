@@ -86,7 +86,7 @@ Controller → Service → Repository → Entity
 
 ## 📁 Project Structure
 
-```bash
+
 src/main/java/com/mahmoud/reservation
 ├── controller
 ├── service
