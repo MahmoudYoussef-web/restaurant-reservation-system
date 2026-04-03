@@ -206,7 +206,3 @@ Backend Developer (Spring Boot)
 ✔ Secure
 ✔ Scalable
 ✔ Production-ready
-
-````
-
-ونكمل 🔥
