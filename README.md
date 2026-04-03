@@ -1,4 +1,4 @@
-# 🍽️ Restaurant Reservation System (Spring Boot)
+# 🍽️ Restaurant Reservation System
 
 ![Java](https://img.shields.io/badge/Java-21-orange)
 ![Spring Boot](https://img.shields.io/badge/SpringBoot-3.x-green)
@@ -6,174 +6,72 @@
 ![JWT](https://img.shields.io/badge/Auth-JWT-yellow)
 ![Status](https://img.shields.io/badge/Status-Production--Ready-brightgreen)
 
-A production-grade backend system designed to handle real-world restaurant booking scenarios with strong focus on concurrency control, data integrity, and scalable API design.
+---
+
+## 🚀 Overview
+
+A **production-grade restaurant reservation system** designed to handle real-world booking challenges such as **concurrent requests, time conflicts, and data consistency**.
+
+This project focuses on **backend engineering principles**, not just CRUD:
+
+- Concurrency control
+- Transactional consistency
+- Business rule enforcement
+- Scalable API design
 
 ---
 
-## 🚀 Why This Project?
+## 🧠 Engineering Highlights
 
-Restaurant booking systems face critical challenges such as:
-
-* Double booking due to concurrent requests
-* Time-based availability conflicts
-* Data inconsistency under high load
-
-This system solves these problems using:
-
-* Pessimistic database locking
-* Conflict detection algorithms
-* Transactional consistency
+- Pessimistic locking to prevent race conditions
+- Time conflict detection using interval overlap logic
+- Optimized queries (`NOT EXISTS` instead of `NOT IN`)
+- Indexed queries for high-performance lookups
+- Stateless JWT authentication (Access + Refresh Tokens)
+- Role-based access control (ADMIN / USER)
+- Clean layered architecture with DTO isolation
 
 ---
 
-## 🧠 Key Engineering Decisions
+## ⚙️ How to Run
 
-### 🔒 Concurrency Control
+### 1. Clone the repository
 
-* Implemented **Pessimistic Locking** to prevent race conditions
-* Ensures only one transaction can reserve a table at a time
-
-### ⏱️ Time Conflict Detection
-
-* Uses interval overlap logic:
-
-```
-start < existingEnd AND end > existingStart
-```
-
-* Prevents double booking at the database level
-
-### 🔐 Authentication & Security
-
-* Stateless JWT authentication with Access & Refresh Tokens
-* Role-based access control (ADMIN / USER)
-
-### ⚡ Query Optimization
-
-* Replaced `NOT IN` with `NOT EXISTS` for better performance and correctness
-* Added indexes for critical queries:
-
-  * `(table_id, start_time, end_time)`
-  * `(user_id)`
+```bash
+git clone https://github.com/MahmoudYoussef-web/restaurant-reservation-system.git
+cd restaurant-reservation-system
+````
 
 ---
 
-## 🚀 Key Features
-
-* Concurrency-safe reservation system
-* Real-time table availability search
-* Pagination support for scalable APIs
-* Global exception handling with standardized responses
-* Clean DTO mapping and separation of concerns
-* Ownership-based access control
-* Stateless and secure backend design
-
----
-
-## 📊 Business Rules
-
-* A user can only access and manage their own reservations
-* Reservations cannot overlap on the same table
-* Reservation time must be valid (`start < end`)
-* Number of guests must not exceed table capacity
-* Only active reservations (PENDING, CONFIRMED) block time slots
-* A reservation can only be cancelled once
-* Table availability is dynamically calculated based on time range
-
----
-
-## 🔄 Core Flow
-
-1. User authenticates via JWT
-2. User checks available tables for a time range
-3. System validates availability using optimized queries
-4. Table is locked using database-level locking
-5. Reservation is created safely without conflicts
-6. User can view or cancel their reservations
-
----
-
-## 🏗️ Architecture
-
-```
-Controller → Service → Repository → Entity
-        ↘ DTO ↔ Mapper ↗
-```
-
-* Clean separation of concerns
-* Business logic isolated in service layer
-* DTOs used to prevent entity exposure
-
----
-
-## 🧰 Tech Stack
+### 2. Requirements
 
 * Java 21
-* Spring Boot 3
-* Spring Security
-* Spring Data JPA
 * MySQL 8
-* JWT
-* Maven
-* Lombok
-* Swagger (OpenAPI)
 
 ---
 
-## 🔗 REST API Endpoints
+### 3. Configuration
 
-All endpoints are prefixed with:
+Update:
 
-```
-/api
+```properties
+spring.datasource.url=jdbc:mysql://localhost:3306/restaurant_reservation
+spring.datasource.username=your_user
+spring.datasource.password=your_password
 ```
 
-### 🔐 Auth
+---
 
-| Method | Endpoint       | Description          |
-| ------ | -------------- | -------------------- |
-| POST   | /auth/register | Register new user    |
-| POST   | /auth/login    | Login and get tokens |
-| POST   | /auth/refresh  | Refresh token        |
-| POST   | /auth/logout   | Logout               |
+### 4. Run the application
 
-### 👤 Users
-
-| Method | Endpoint  | Description      |
-| ------ | --------- | ---------------- |
-| GET    | /users/me | Get current user |
-| PUT    | /users/me | Update user      |
-
-### 📅 Reservations
-
-| Method | Endpoint           | Description           |
-| ------ | ------------------ | --------------------- |
-| POST   | /reservations      | Create reservation    |
-| GET    | /reservations/{id} | Get reservation by ID |
-| GET    | /reservations/my   | Get user reservations |
-| DELETE | /reservations/{id} | Cancel reservation    |
-
-### 🍽️ Restaurants & Tables
-
-| Method | Endpoint                           | Description                     |
-| ------ | ---------------------------------- | ------------------------------- |
-| GET    | /restaurants/{id}/available-tables | Get available tables            |
-| GET    | /admin/restaurants                 | Get all restaurants (paginated) |
-| POST   | /admin/restaurants                 | Create restaurant (ADMIN)       |
-| GET    | /admin/restaurants/{id}/tables     | Get tables (paginated)          |
-| POST   | /admin/tables                      | Create table (ADMIN)            |
+```bash
+mvn spring-boot:run
+```
 
 ---
 
-## 🗄️ Database Design
-
-<p align="center">
-<img width="811" height="1186" alt="restaurant-reservation" src="https://github.com/user-attachments/assets/c0f98e15-44fa-4a4b-89f0-798de1572bae" />
-</p>
-
----
-
-## 📄 API Documentation
+### 5. Swagger UI
 
 ```
 http://localhost:8080/swagger-ui/index.html
@@ -181,38 +79,134 @@ http://localhost:8080/swagger-ui/index.html
 
 ---
 
-## ⚡ Quick Run
+## 📡 API Overview
 
-```bash
-git clone https://github.com/YOUR_USERNAME/restaurant-reservation-system.git
-cd restaurant-reservation-system
-mvn spring-boot:run
+### 🔐 Authentication
+
+* POST `/api/auth/register`
+* POST `/api/auth/login`
+* POST `/api/auth/refresh`
+* POST `/api/auth/logout`
+
+---
+
+### 👤 Users
+
+* GET `/api/users/me`
+* PUT `/api/users/me`
+
+---
+
+### 📅 Reservations
+
+* POST `/api/reservations`
+* GET `/api/reservations/{id}`
+* GET `/api/reservations/my`
+* DELETE `/api/reservations/{id}`
+
+---
+
+### 🍽️ Restaurants & Tables
+
+* GET `/api/restaurants/{id}/available-tables`
+* GET `/api/admin/restaurants`
+* POST `/api/admin/restaurants`
+* GET `/api/admin/restaurants/{id}/tables`
+* POST `/api/admin/tables`
+
+---
+
+## 🏗️ Architecture
+
+```
+Controller → Service → Repository → Database
+        ↘ DTO ↔ Mapper ↗
+```
+
+### Design Principles:
+
+* Separation of concerns
+* Business logic isolated in service layer
+* DTOs used to prevent entity exposure
+* Stateless authentication
+
+---
+
+## ⚡ Core Flow
+
+```
+User → Authenticate (JWT)
+     → Check available tables
+     → Validate time conflicts
+     → Lock table (pessimistic locking)
+     → Create reservation
+     → Retrieve / cancel reservation
 ```
 
 ---
 
-## ⚠️ Edge Cases Handled
+## 📊 Business Rules
 
-* Concurrent booking requests
-* Invalid time ranges
-* Over-capacity reservations
-* Unauthorized access
-* Repeated cancellation
+* Users can only manage their own reservations
+* Reservations cannot overlap on the same table
+* Time must be valid (`start < end`)
+* Guests must not exceed table capacity
+* Only active reservations block time slots
+* Reservations can only be cancelled once
 
 ---
 
-## 🚀 Future Improvements
+## ⚖️ Trade-offs
 
-* Redis caching for availability queries
-* Rate limiting
-* Docker containerization
-* CI/CD pipeline
-* Cloud deployment (AWS / Render)
-* Monitoring & logging (ELK / Grafana)
+| Decision            | Trade-off                 |
+| ------------------- | ------------------------- |
+| Pessimistic locking | Reduced concurrency       |
+| Complex validation  | Increased code complexity |
+| No caching          | Higher DB load            |
+
+---
+
+## 🧪 Edge Cases Handled
+
+* Concurrent booking requests
+* Overlapping time ranges
+* Invalid reservation input
+* Unauthorized access
+* Duplicate cancellation attempts
+
+---
+
+## 🗄️ Database Design
+
+![Database](https://github.com/user-attachments/assets/c0f98e15-44fa-4a4b-89f0-798de1572bae)
+
+---
+
+## 🎯 What This Project Demonstrates
+
+* Concurrency handling in real systems
+* Conflict detection algorithms
+* Transaction-safe operations
+* Secure authentication and authorization
+* Clean backend architecture
 
 ---
 
 ## 👨‍💻 Author
 
-Mahmoud
-Backend Developer | Spring Boot
+Mahmoud Youssef
+Backend Developer (Spring Boot)
+
+---
+
+## 🏁 Final Result
+
+✔ Concurrency-safe
+✔ Consistent
+✔ Secure
+✔ Scalable
+✔ Production-ready
+
+````
+
+ونكمل 🔥
