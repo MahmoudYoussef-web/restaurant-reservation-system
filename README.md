@@ -18,111 +18,27 @@ A production-grade restaurant reservation and management backend built with **Sp
 
 ## 📐 System Architecture
 
-```
-┌─────────────────────────────────────────────────────────────────────┐
-│                        🌐 HTTP Clients                              │
-│              (Mobile App · Web App · Swagger UI)                    │
-└─────────────────────────┬───────────────────────────────────────────┘
-                          │
-                          ▼
-┌─────────────────────────────────────────────────────────────────────┐
-│                    🛡️  Security Layer                               │
-│                                                                     │
-│  ┌──────────────┐  ┌──────────────┐  ┌──────────────────────────┐  │
-│  │  JWT Filter   │  │  Rate Limiter │  │  CORS Filter            │  │
-│  │ (AuthToken)   │  │ (20 req/min)  │  │ (localhost:3000/5173)   │  │
-│  └──────┬───────┘  └──────┬───────┘  └──────────┬───────────────┘  │
-│         │                 │                       │                 │
-│         └─────────────────┴───────────────────────┘                 │
-│                              │                                      │
-│                              ▼                                      │
-│               ┌──────────────────────────────┐                      │
-│               │   @PreAuthorize("hasRole")   │                      │
-│               │   Role Checkpoint Layer      │                      │
-│               └──────────────────────────────┘                      │
-└─────────────────────────────────────────────────────────────────────┘
-                          │
-                          ▼
-┌─────────────────────────────────────────────────────────────────────┐
-│                    🎮  Controller Layer                              │
-│                                                                     │
-│  ┌──────────┐  ┌──────────┐  ┌────────────┐  ┌──────────────────┐  │
-│  │  Auth    │  │  User    │  │Reservation  │  │  Restaurant      │  │
-│  │Controller│  │Controller│  │Controller   │  │  Controller      │  │
-│  └──────────┘  └──────────┘  └────────────┘  └──────────────────┘  │
-│  ┌──────────┐  ┌──────────┐  ┌────────────┐  ┌──────────────────┐  │
-│  │  Menu    │  │  Order   │  │  Invoice    │  │  Review          │  │
-│  │Controller│  │Controller│  │Controller   │  │  Controller      │  │
-│  └──────────┘  └──────────┘  └────────────┘  └──────────────────┘  │
-│  ┌──────────────────────────────────────────────────────────────┐   │
-│  │  AdminController 🛡️ (ROLE_ADMIN only)                        │   │
-│  └──────────────────────────────────────────────────────────────┘   │
-└─────────────────────────────────────────────────────────────────────┘
-                          │
-                          ▼
-┌─────────────────────────────────────────────────────────────────────┐
-│                    ⚙️  Service Layer (Business Logic)                │
-│                                                                     │
-│  ┌──────────────────────────────────────────────────────────────┐   │
-│  │  AuthService     │  UserService     │  ReservationService    │   │
-│  │  (JWT + Refresh) │  (Profile Mgmt)  │  (Conflict Detection)  │   │
-│  ├──────────────────┼──────────────────┼────────────────────────┤   │
-│  │  AdminService    │  MenuService     │  OrderService          │   │
-│  │  (CRUD + Roles)  │  (Menu Browsing) │  (Item Mgmt + Status)  │   │
-│  ├──────────────────┼──────────────────┼────────────────────────┤   │
-│  │  InvoiceService  │  ReviewService   │                        │   │
-│  │  (Auto-Generate) │  (Rating System) │                        │   │
-│  └──────────────────────────────────────────────────────────────┘   │
-│                                                                     │
-│  🔄 Scheduler: Hourly auto-complete expired APPROVED reservations   │
-└─────────────────────────────────────────────────────────────────────┘
-                          │
-                          ▼
-┌─────────────────────────────────────────────────────────────────────┐
-│                    📦  Repository Layer (Data Access)                │
-│                                                                     │
-│  ┌──────────┐  ┌──────────┐  ┌────────────┐  ┌──────────────────┐  │
-│  │  User    │  │  Role    │  │Reservation  │  │  DiningTable     │  │
-│  │Repo      │  │Repo      │  │Repo         │  │  Repo            │  │
-│  └──────────┘  └──────────┘  └────────────┘  └──────────────────┘  │
-│  ┌──────────┐  ┌──────────┐  ┌────────────┐  ┌──────────────────┐  │
-│  │Restaurant│  │MenuCat   │  │ MenuItem   │  │  Order/OrderItem │  │
-│  │Repo      │  │Repo      │  │ Repo       │  │  Repos           │  │
-│  └──────────┘  └──────────┘  └────────────┘  └──────────────────┘  │
-│  ┌──────────┐  ┌──────────┐                                         │
-│  │ Invoice  │  │ Review   │                                         │
-│  │Repo      │  │Repo      │                                         │
-│  └──────────┘  └──────────┘                                         │
-└─────────────────────────────────────────────────────────────────────┘
-                          │
-                          ▼
-┌─────────────────────────────────────────────────────────────────────┐
-│                    🗄️  Database Layer (MySQL 8)                      │
-│                                                                     │
-│  ┌──────────────────────────────────────────────────────────────┐   │
-│  │  Flyway Versioned Migrations                                  │   │
-│  │  V1__init_schema.sql  →  Core tables (users, roles, etc.)    │   │
-│  │  V2__seed_roles.sql   →  ROLE_USER, ROLE_OWNER, ROLE_ADMIN   │   │
-│  │  V3__extend_schema.sql → Menu, Orders, Invoices, Reviews     │   │
-│  └──────────────────────────────────────────────────────────────┘   │
-└─────────────────────────────────────────────────────────────────────┘
-```
+```mermaid
+flowchart TB
+    Client["🌐 HTTP Clients"]
+    Security["🛡️ Security Layer<br/>JWT · Rate Limiter · CORS · @PreAuthorize"]
+    Controller["🎮 Controller Layer<br/>Auth · User · Reservation · Restaurant<br/>Menu · Order · Invoice · Review · Admin"]
+    Service["⚙️ Service Layer<br/>Auth · User · Reservation · Admin<br/>Menu · Order · Invoice · Review<br/>Scheduler: auto-complete expired"]
+    Repo["📦 Repository Layer<br/>User · Role · Reservation · DiningTable<br/>Restaurant · MenuCat · MenuItem<br/>Order · OrderItem · Invoice · Review"]
+    DB["🗄️ Database (MySQL 8)<br/>Flyway: V1 → V2 → V3"]
 
-### Diagram Legend
-
-| Shape | Layer | Description |
-|-------|-------|-------------|
-| 🛡️ | Security | JWT authentication, rate limiting, CORS, role check |
-| 🎮 | Controller | REST endpoints — receives requests, delegates to services |
-| ⚙️ | Service | Business logic, validation, orchestration |
-| 📦 | Repository | Data access via Spring Data JPA |
-| 🗄️ | Database | MySQL 8 with Flyway versioned migrations |
+    Client --> Security
+    Security --> Controller
+    Controller --> Service
+    Service --> Repo
+    Repo --> DB
+```
 
 ---
 
 ## 🗄️ Database Schema
 
-<img width="735" alt="resturant" src="https://github.com/user-attachments/assets/e69b867e-5718-49d5-8c7d-445521b9c8fd" />
+<img width="735" alt="restaurant" src="https://github.com/user-attachments/assets/e69b867e-5718-49d5-8c7d-445521b9c8fd" />
 
 ### Tables Overview
 
@@ -148,34 +64,21 @@ A production-grade restaurant reservation and management backend built with **Sp
 
 ## 🔄 Reservation Lifecycle
 
-```
-  User                        System                        Admin
-  │                            │                              │
-  │  1. POST /api/reservations │                              │
-  │  ─────────────────────────▶│                              │
-  │                            │  2. Lock Table + Check       │
-  │                            │     Conflict + Capacity      │
-  │                            │                              │
-  │  3. Status = PENDING       │                              │
-  │  ◀─────────────────────────│                              │
-  │                            │                              │
-  │                            │  4. PUT /admin/reservations/{id}/approve
-  │                            │  ◀───────────────────────────│
-  │                            │  5. Status = APPROVED         │
-  │                            │                              │
-  │    ~~~ Time passes...      │                              │
-  │                            │  6. ⏰ Scheduler runs hourly  │
-  │                            │  7. Status = COMPLETED        │
-  │                            │                              │
-```
+1. **User** creates reservation → `POST /api/reservations`
+2. **System** locks table, checks conflicts & capacity
+3. Status set to `PENDING`
+4. **Admin** approves → `PUT /admin/reservations/{id}/approve`
+5. Status set to `APPROVED`
+6. **Scheduler** runs hourly → auto-completes expired reservations
+7. Status set to `COMPLETED`
 
 ### Status Transitions
 
 ```
-PENDING ──→ APPROVED ──→ COMPLETED (auto, scheduler)
-PENDING ──→ REJECTED
-PENDING ──→ CANCELLED
-APPROVED ──→ CANCELLED
+PENDING → APPROVED → COMPLETED (auto)
+PENDING → REJECTED
+PENDING → CANCELLED
+APPROVED → CANCELLED
 ```
 
 ---
@@ -184,27 +87,12 @@ APPROVED ──→ CANCELLED
 
 ### Auth Flow
 
-```
-Client                     Backend                        DB
-  │                          │                           │
-  │  POST /api/auth/login    │                           │
-  │  { email, password }     │                           │
-  │ ────────────────────────▶│                           │
-  │                          │  Find user → BCrypt check │
-  │                          │  Generate JWT + Refresh   │
-  │ ◀────────────────────────│                           │
-  │ { accessToken, refreshToken }                        │
-  │                          │                           │
-  │  POST /api/reservations  │                           │
-  │  Authorization: Bearer   │                           │
-  │ ────────────────────────▶│                           │
-  │                          │  AuthTokenFilter:         │
-  │                          │  1. Extract JWT           │
-  │                          │  2. Validate signature    │
-  │                          │  3. Extract roles         │
-  │                          │  4. @PreAuthorize check   │
-  │ ◀────────────────────────│                           │
-```
+1. **Login**: `POST /api/auth/login` with email + password
+2. Backend finds user, checks BCrypt hash, generates JWT + refresh token
+3. Client receives `{ accessToken, refreshToken }`
+4. **Subsequent requests**: Include `Authorization: Bearer <token>`
+5. `AuthTokenFilter` extracts JWT, validates signature, extracts roles
+6. `@PreAuthorize` enforces role-based access
 
 ### Security Components
 
