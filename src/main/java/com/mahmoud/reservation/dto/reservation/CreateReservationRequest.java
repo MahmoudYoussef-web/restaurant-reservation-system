@@ -2,6 +2,7 @@ package com.mahmoud.reservation.dto.reservation;
 
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 import lombok.*;
 
 import java.time.Instant;
@@ -26,6 +27,7 @@ public class CreateReservationRequest {
     @Min(1)
     private Integer numberOfGuests;
 
+    @Size(max = 500)
     private String specialRequest;
 
     public void validate() {

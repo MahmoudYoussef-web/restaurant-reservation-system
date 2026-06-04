@@ -4,17 +4,17 @@ import com.mahmoud.reservation.dto.reservation.ReservationResponse;
 import com.mahmoud.reservation.entity.DiningTable;
 import com.mahmoud.reservation.entity.Reservation;
 import com.mahmoud.reservation.entity.Restaurant;
+import org.springframework.stereotype.Component;
 
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
-public final class ReservationMapper {
+@Component
+public class ReservationMapper {
 
-    private ReservationMapper() {}
-
-    public static ReservationResponse toResponse(Reservation reservation) {
+    public ReservationResponse toResponse(Reservation reservation) {
         if (reservation == null) {
             return null;
         }
@@ -36,14 +36,14 @@ public final class ReservationMapper {
                 .build();
     }
 
-    public static List<ReservationResponse> toResponseList(List<Reservation> reservations) {
+    public List<ReservationResponse> toResponseList(List<Reservation> reservations) {
         if (reservations == null || reservations.isEmpty()) {
             return Collections.emptyList();
         }
 
         return reservations.stream()
                 .filter(Objects::nonNull)
-                .map(ReservationMapper::toResponse)
+                .map(this::toResponse)
                 .collect(Collectors.toList());
     }
 }

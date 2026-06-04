@@ -15,4 +15,14 @@ public class CreateRestaurantRequest {
 
     @NotBlank
     private String location;
+
+    private String openingTime;
+
+    private String closingTime;
+
+    private String phone;
+
+    private String description;
+
+    private String imageUrl;
 }

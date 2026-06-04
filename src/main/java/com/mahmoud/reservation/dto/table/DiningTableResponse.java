@@ -12,5 +12,6 @@ public class DiningTableResponse {
     private Long id;
     private Integer tableNumber;
     private Integer capacity;
+    private String tableStatus;
     private Long restaurantId;
 }
