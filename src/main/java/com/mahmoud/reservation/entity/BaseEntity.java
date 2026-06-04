@@ -31,5 +31,6 @@ public abstract class BaseEntity {
     protected Instant updatedAt;
 
     @Column(name = "is_deleted", nullable = false)
+    @Builder.Default
     protected boolean isDeleted = false;
 }

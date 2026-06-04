@@ -1,5 +1,6 @@
 package com.mahmoud.reservation.entity;
 
+import com.mahmoud.reservation.enums.TableStatus;
 import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.SuperBuilder;
@@ -30,6 +31,11 @@ public class DiningTable extends BaseEntity {
 
     @Column(name = "capacity", nullable = false)
     private Integer capacity;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "table_status", nullable = false)
+    @Builder.Default
+    private TableStatus tableStatus = TableStatus.AVAILABLE;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "restaurant_id", nullable = false)
