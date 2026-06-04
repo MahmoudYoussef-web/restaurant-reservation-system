@@ -2,6 +2,7 @@ package com.mahmoud.reservation.controller;
 
 import com.mahmoud.reservation.dto.table.DiningTableResponse;
 import com.mahmoud.reservation.service.reservation.ReservationService;
+import io.swagger.v3.oas.annotations.Operation;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -16,6 +17,7 @@ public class RestaurantController {
 
     private final ReservationService reservationService;
 
+    @Operation(summary = "Get available tables for a time range")
     @GetMapping("/{id}/available-tables")
     public ResponseEntity<List<DiningTableResponse>> getAvailableTables(
             @PathVariable Long id,

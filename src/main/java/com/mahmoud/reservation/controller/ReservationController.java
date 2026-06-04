@@ -1,8 +1,10 @@
 package com.mahmoud.reservation.controller;
 
 import com.mahmoud.reservation.dto.common.MessageResponse;
+import com.mahmoud.reservation.dto.common.PageResponse;
 import com.mahmoud.reservation.dto.reservation.CreateReservationRequest;
 import com.mahmoud.reservation.dto.reservation.ReservationResponse;
+import com.mahmoud.reservation.exception.UnauthorizedException;
 import com.mahmoud.reservation.security.user.ShopUserDetails;
 import com.mahmoud.reservation.service.reservation.ReservationService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -15,7 +17,6 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import jakarta.validation.Valid;
-import java.util.List;
 
 @RestController
 @RequestMapping("/api/reservations")
@@ -36,18 +37,24 @@ public class ReservationController {
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
+    @Operation(summary = "Get user reservations (paginated)")
     @GetMapping("/my")
-    public ResponseEntity<List<ReservationResponse>> getMyReservations() {
+    public ResponseEntity<PageResponse<ReservationResponse>> getMyReservations(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size
+    ) {
         Long userId = getCurrentUserId();
-        return ResponseEntity.ok(reservationService.getUserReservations(userId));
+        return ResponseEntity.ok(reservationService.getUserReservations(userId, page, size));
     }
 
+    @Operation(summary = "Get reservation by ID")
     @GetMapping("/{id}")
     public ResponseEntity<ReservationResponse> getReservationById(@PathVariable Long id) {
         Long userId = getCurrentUserId();
         return ResponseEntity.ok(reservationService.getReservationById(id, userId));
     }
 
+    @Operation(summary = "Cancel reservation")
     @DeleteMapping("/{id}")
     public ResponseEntity<MessageResponse> cancelReservation(@PathVariable Long id) {
         Long userId = getCurrentUserId();
@@ -64,7 +71,7 @@ public class ReservationController {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 
         if (authentication == null || !(authentication.getPrincipal() instanceof ShopUserDetails userDetails)) {
-            throw new RuntimeException("Unauthorized");
+            throw new UnauthorizedException("Unauthorized");
         }
 
         return userDetails.getId();
