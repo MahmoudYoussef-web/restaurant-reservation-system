@@ -10,7 +10,6 @@ import java.util.Map;
 @JsonInclude(JsonInclude.Include.NON_EMPTY)
 public class ApiErrorResponse {
 
-    private final boolean success = false;
     private final int status;
     private final String message;
     private final String errorCode;

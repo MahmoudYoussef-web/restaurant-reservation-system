@@ -17,7 +17,7 @@ public class ShopUserDetailsService implements UserDetailsService {
 
         String normalizedEmail = email.toLowerCase().trim();
 
-        User user = userRepository.findByEmailWithRoles(email)
+        User user = userRepository.findByEmailWithRoles(normalizedEmail)
                 .orElseThrow(() -> new UsernameNotFoundException("User not found"));
 
         return ShopUserDetails.from(user);
