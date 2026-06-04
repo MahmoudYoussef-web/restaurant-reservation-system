@@ -2,6 +2,7 @@ package com.mahmoud.reservation.repository;
 
 import com.mahmoud.reservation.entity.DiningTable;
 import com.mahmoud.reservation.enums.ReservationStatus;
+import com.mahmoud.reservation.enums.TableStatus;
 import jakarta.persistence.LockModeType;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -30,6 +31,7 @@ public interface DiningTableRepository extends JpaRepository<DiningTable, Long> 
     @Query("""
         SELECT t FROM DiningTable t
         WHERE t.restaurant.id = :restaurantId
+        AND t.tableStatus = :tableStatus
         AND NOT EXISTS (
             SELECT 1 FROM Reservation r
             WHERE r.table.id = t.id
@@ -42,6 +44,7 @@ public interface DiningTableRepository extends JpaRepository<DiningTable, Long> 
             @Param("restaurantId") Long restaurantId,
             @Param("startTime") Instant startTime,
             @Param("endTime") Instant endTime,
-            @Param("statuses") List<ReservationStatus> statuses
+            @Param("statuses") List<ReservationStatus> statuses,
+            @Param("tableStatus") TableStatus tableStatus
     );
 }

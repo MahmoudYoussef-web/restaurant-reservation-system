@@ -3,6 +3,8 @@ package com.mahmoud.reservation.repository;
 import com.mahmoud.reservation.entity.Reservation;
 import com.mahmoud.reservation.enums.ReservationStatus;
 import jakarta.persistence.LockModeType;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.*;
 import org.springframework.data.repository.query.Param;
 
@@ -37,6 +39,17 @@ public interface ReservationRepository extends JpaRepository<Reservation, Long> 
         WHERE r.userId = :userId
     """)
     List<Reservation> findByUserIdWithDetails(Long userId);
+
+    @Query(value = """
+        SELECT r FROM Reservation r
+        JOIN FETCH r.table t
+        JOIN FETCH t.restaurant
+        WHERE r.userId = :userId
+        """,
+        countQuery = "SELECT COUNT(r) FROM Reservation r WHERE r.userId = :userId")
+    Page<Reservation> findByUserIdWithDetails(@Param("userId") Long userId, Pageable pageable);
+
+    List<Reservation> findByStatusAndEndTimeBefore(ReservationStatus status, Instant endTime);
 
     @Query("""
         SELECT t.id FROM Reservation r
