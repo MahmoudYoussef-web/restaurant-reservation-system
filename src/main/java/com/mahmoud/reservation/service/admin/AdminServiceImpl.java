@@ -1,34 +1,76 @@
 package com.mahmoud.reservation.service.admin;
 
-import com.mahmoud.reservation.dto.admin.CreateDiningTableRequest;
-import com.mahmoud.reservation.dto.admin.CreateRestaurantRequest;
+import com.mahmoud.reservation.dto.admin.*;
+import com.mahmoud.reservation.dto.common.MessageResponse;
 import com.mahmoud.reservation.dto.common.PageResponse;
+import com.mahmoud.reservation.dto.menu.MenuCategoryRequest;
+import com.mahmoud.reservation.dto.menu.MenuCategoryResponse;
+import com.mahmoud.reservation.dto.menu.MenuItemRequest;
+import com.mahmoud.reservation.dto.menu.MenuItemResponse;
 import com.mahmoud.reservation.dto.restaurant.RestaurantResponse;
 import com.mahmoud.reservation.dto.table.DiningTableResponse;
-import com.mahmoud.reservation.entity.DiningTable;
-import com.mahmoud.reservation.entity.Restaurant;
+import com.mahmoud.reservation.entity.*;
+import com.mahmoud.reservation.enums.ReservationStatus;
+import com.mahmoud.reservation.enums.RoleName;
+import com.mahmoud.reservation.enums.TableStatus;
 import com.mahmoud.reservation.exception.BadRequestException;
 import com.mahmoud.reservation.exception.ConflictException;
 import com.mahmoud.reservation.exception.ResourceNotFoundException;
-import com.mahmoud.reservation.repository.DiningTableRepository;
-import com.mahmoud.reservation.repository.RestaurantRepository;
+import com.mahmoud.reservation.repository.*;
 import lombok.RequiredArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.time.LocalTime;
 
 @Service
 @RequiredArgsConstructor
 @Transactional
 public class AdminServiceImpl implements AdminService {
 
+    private static final Logger log = LoggerFactory.getLogger(AdminServiceImpl.class);
+
     private final RestaurantRepository restaurantRepository;
     private final DiningTableRepository diningTableRepository;
+    private final UserRepository userRepository;
+    private final RoleRepository roleRepository;
+    private final ReservationRepository reservationRepository;
+    private final MenuCategoryRepository menuCategoryRepository;
+    private final MenuItemRepository menuItemRepository;
+
+    private String formatTime(LocalTime time) {
+        return time != null ? time.toString() : null;
+    }
+
+    private RestaurantResponse toRestaurantResponse(Restaurant r) {
+        return RestaurantResponse.builder()
+                .id(r.getId())
+                .name(r.getName())
+                .location(r.getLocation())
+                .openingTime(formatTime(r.getOpeningTime()))
+                .closingTime(formatTime(r.getClosingTime()))
+                .phone(r.getPhone())
+                .description(r.getDescription())
+                .imageUrl(r.getImageUrl())
+                .build();
+    }
+
+    private DiningTableResponse toDiningTableResponse(DiningTable t) {
+        return DiningTableResponse.builder()
+                .id(t.getId())
+                .tableNumber(t.getTableNumber())
+                .capacity(t.getCapacity())
+                .tableStatus(t.getTableStatus().name())
+                .restaurantId(t.getRestaurant().getId())
+                .build();
+    }
 
     @Override
     public RestaurantResponse createRestaurant(CreateRestaurantRequest request) {
-
         if (restaurantRepository.existsByName(request.getName())) {
             throw new ConflictException("Restaurant already exists");
         }
@@ -36,26 +78,54 @@ public class AdminServiceImpl implements AdminService {
         Restaurant restaurant = Restaurant.builder()
                 .name(request.getName())
                 .location(request.getLocation())
+                .openingTime(request.getOpeningTime() != null ? LocalTime.parse(request.getOpeningTime()) : null)
+                .closingTime(request.getClosingTime() != null ? LocalTime.parse(request.getClosingTime()) : null)
+                .phone(request.getPhone())
+                .description(request.getDescription())
+                .imageUrl(request.getImageUrl())
                 .build();
 
         Restaurant saved = restaurantRepository.save(restaurant);
+        return toRestaurantResponse(saved);
+    }
 
-        return RestaurantResponse.builder()
-                .id(saved.getId())
-                .name(saved.getName())
-                .location(saved.getLocation())
-                .build();
+    @Override
+    public RestaurantResponse updateRestaurant(Long id, CreateRestaurantRequest request) {
+        Restaurant restaurant = restaurantRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Restaurant not found"));
+
+        if (restaurantRepository.existsByNameAndIdNot(request.getName(), id)) {
+            throw new ConflictException("Restaurant name already in use");
+        }
+
+        restaurant.setName(request.getName());
+        restaurant.setLocation(request.getLocation());
+        restaurant.setOpeningTime(request.getOpeningTime() != null ? LocalTime.parse(request.getOpeningTime()) : null);
+        restaurant.setClosingTime(request.getClosingTime() != null ? LocalTime.parse(request.getClosingTime()) : null);
+        restaurant.setPhone(request.getPhone());
+        restaurant.setDescription(request.getDescription());
+        restaurant.setImageUrl(request.getImageUrl());
+
+        Restaurant saved = restaurantRepository.save(restaurant);
+        log.info("Updated restaurant {}: {}", id, request.getName());
+        return toRestaurantResponse(saved);
+    }
+
+    @Override
+    public void deleteRestaurant(Long id) {
+        Restaurant restaurant = restaurantRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Restaurant not found"));
+        restaurantRepository.delete(restaurant);
+        log.info("Deleted restaurant {}", id);
     }
 
     @Override
     public DiningTableResponse createDiningTable(CreateDiningTableRequest request) {
-
         Restaurant restaurant = restaurantRepository.findById(request.getRestaurantId())
                 .orElseThrow(() -> new ResourceNotFoundException("Restaurant not found"));
 
         if (diningTableRepository.existsByRestaurantIdAndTableNumber(
-                request.getRestaurantId(),
-                request.getTableNumber()
+                request.getRestaurantId(), request.getTableNumber()
         )) {
             throw new ConflictException("Table already exists");
         }
@@ -67,42 +137,69 @@ public class AdminServiceImpl implements AdminService {
                 .build();
 
         DiningTable saved = diningTableRepository.save(table);
+        return toDiningTableResponse(saved);
+    }
 
-        return DiningTableResponse.builder()
-                .id(saved.getId())
-                .tableNumber(saved.getTableNumber())
-                .capacity(saved.getCapacity())
-                .restaurantId(restaurant.getId())
-                .build();
+    @Override
+    public DiningTableResponse updateDiningTable(Long id, UpdateDiningTableRequest request) {
+        DiningTable table = diningTableRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Dining table not found"));
+
+        table.setTableNumber(request.getTableNumber());
+        table.setCapacity(request.getCapacity());
+
+        DiningTable saved = diningTableRepository.save(table);
+        log.info("Updated dining table {}: tableNumber={}", id, request.getTableNumber());
+        return toDiningTableResponse(saved);
+    }
+
+    @Override
+    public void deleteDiningTable(Long id) {
+        DiningTable table = diningTableRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Dining table not found"));
+        diningTableRepository.delete(table);
+        log.info("Deleted dining table {}", id);
+    }
+
+    @Override
+    public DiningTableResponse updateTableStatus(Long id, UpdateTableStatusRequest request) {
+        DiningTable table = diningTableRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Dining table not found"));
+
+        TableStatus status;
+        try {
+            status = TableStatus.valueOf(request.getTableStatus().toUpperCase());
+        } catch (IllegalArgumentException e) {
+            throw new BadRequestException("Invalid table status");
+        }
+
+        table.setTableStatus(status);
+        DiningTable saved = diningTableRepository.save(table);
+        log.info("Updated table {} status to {}", id, status);
+        return toDiningTableResponse(saved);
     }
 
     @Override
     @Transactional(readOnly = true)
     public PageResponse<RestaurantResponse> getAllRestaurants(int page, int size) {
-
         validatePagination(page, size);
 
         PageRequest pageable = PageRequest.of(page, size);
         Page<Restaurant> result = restaurantRepository.findAll(pageable);
 
         return PageResponse.<RestaurantResponse>builder()
-                .content(result.getContent().stream()
-                        .map(r -> RestaurantResponse.builder()
-                                .id(r.getId())
-                                .name(r.getName())
-                                .location(r.getLocation())
-                                .build())
-                        .toList())
+                .content(result.getContent().stream().map(this::toRestaurantResponse).toList())
                 .page(result.getNumber())
                 .size(result.getSize())
                 .totalElements(result.getTotalElements())
                 .totalPages(result.getTotalPages())
                 .last(result.isLast())
                 .build();
-    }@Override
+    }
+
+    @Override
     @Transactional(readOnly = true)
     public PageResponse<DiningTableResponse> getTablesByRestaurant(Long restaurantId, int page, int size) {
-
         validatePagination(page, size);
 
         restaurantRepository.findById(restaurantId)
@@ -112,20 +209,187 @@ public class AdminServiceImpl implements AdminService {
         Page<DiningTable> result = diningTableRepository.findByRestaurantId(restaurantId, pageable);
 
         return PageResponse.<DiningTableResponse>builder()
-                .content(result.getContent().stream()
-                        .map(t -> DiningTableResponse.builder()
-                                .id(t.getId())
-                                .tableNumber(t.getTableNumber())
-                                .capacity(t.getCapacity())
-                                .restaurantId(restaurantId)
-                                .build())
-                        .toList())
+                .content(result.getContent().stream().map(this::toDiningTableResponse).toList())
                 .page(result.getNumber())
                 .size(result.getSize())
                 .totalElements(result.getTotalElements())
                 .totalPages(result.getTotalPages())
                 .last(result.isLast())
                 .build();
+    }
+
+    @Override
+    public MessageResponse assignOwnerRole(Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+
+        Role ownerRole = roleRepository.findByName(RoleName.ROLE_OWNER)
+                .orElseThrow(() -> new ResourceNotFoundException("Role not found"));
+
+        boolean alreadyOwner = user.getUserRoles().stream()
+                .anyMatch(ur -> ur.getRole().getName() == RoleName.ROLE_OWNER);
+
+        if (!alreadyOwner) {
+            UserRole userRole = UserRole.builder()
+                    .user(user)
+                    .role(ownerRole)
+                    .build();
+            user.getUserRoles().add(userRole);
+            userRepository.save(user);
+            log.info("Assigned OWNER role to user {}", userId);
+        }
+
+        return new MessageResponse("Owner role assigned successfully");
+    }
+
+    @Override
+    public MessageResponse cancelReservationByAdmin(Long reservationId) {
+        Reservation reservation = reservationRepository.findByIdWithLock(reservationId)
+                .orElseThrow(() -> new ResourceNotFoundException("Reservation not found"));
+
+        if (reservation.getStatus() == ReservationStatus.CANCELLED) {
+            throw new BadRequestException("Reservation already cancelled");
+        }
+
+        reservation.setStatus(ReservationStatus.CANCELLED);
+        log.info("Admin cancelled reservation {}", reservationId);
+        return new MessageResponse("Reservation cancelled successfully");
+    }
+
+    @Override
+    public MessageResponse approveReservation(Long reservationId) {
+        Reservation reservation = reservationRepository.findByIdWithLock(reservationId)
+                .orElseThrow(() -> new ResourceNotFoundException("Reservation not found"));
+
+        if (reservation.getStatus() != ReservationStatus.PENDING) {
+            throw new BadRequestException("Only pending reservations can be approved");
+        }
+
+        reservation.setStatus(ReservationStatus.APPROVED);
+        log.info("Admin approved reservation {}", reservationId);
+        return new MessageResponse("Reservation approved successfully");
+    }
+
+    @Override
+    public MessageResponse rejectReservation(Long reservationId) {
+        Reservation reservation = reservationRepository.findByIdWithLock(reservationId)
+                .orElseThrow(() -> new ResourceNotFoundException("Reservation not found"));
+
+        if (reservation.getStatus() != ReservationStatus.PENDING) {
+            throw new BadRequestException("Only pending reservations can be rejected");
+        }
+
+        reservation.setStatus(ReservationStatus.REJECTED);
+        log.info("Admin rejected reservation {}", reservationId);
+        return new MessageResponse("Reservation rejected successfully");
+    }
+
+    @Override
+    public MenuCategoryResponse createCategory(MenuCategoryRequest request) {
+        if (menuCategoryRepository.existsByName(request.getName())) {
+            throw new ConflictException("Category already exists");
+        }
+
+        MenuCategory category = MenuCategory.builder()
+                .name(request.getName())
+                .description(request.getDescription())
+                .build();
+
+        MenuCategory saved = menuCategoryRepository.save(category);
+
+        return MenuCategoryResponse.builder()
+                .id(saved.getId())
+                .name(saved.getName())
+                .description(saved.getDescription())
+                .build();
+    }
+
+    @Override
+    public MenuCategoryResponse updateCategory(Long id, MenuCategoryRequest request) {
+        MenuCategory category = menuCategoryRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Category not found"));
+
+        category.setName(request.getName());
+        category.setDescription(request.getDescription());
+
+        MenuCategory saved = menuCategoryRepository.save(category);
+
+        return MenuCategoryResponse.builder()
+                .id(saved.getId())
+                .name(saved.getName())
+                .description(saved.getDescription())
+                .build();
+    }
+
+    @Override
+    public void deleteCategory(Long id) {
+        MenuCategory category = menuCategoryRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Category not found"));
+        menuCategoryRepository.delete(category);
+        log.info("Deleted menu category {}", id);
+    }
+
+    @Override
+    public MenuItemResponse createMenuItem(MenuItemRequest request) {
+        MenuCategory category = menuCategoryRepository.findById(request.getCategoryId())
+                .orElseThrow(() -> new ResourceNotFoundException("Category not found"));
+
+        MenuItem item = MenuItem.builder()
+                .category(category)
+                .name(request.getName())
+                .description(request.getDescription())
+                .price(request.getPrice())
+                .imageUrl(request.getImageUrl())
+                .available(request.getAvailable() != null ? request.getAvailable() : true)
+                .build();
+
+        MenuItem saved = menuItemRepository.save(item);
+
+        return MenuItemResponse.builder()
+                .id(saved.getId())
+                .categoryId(category.getId())
+                .name(saved.getName())
+                .description(saved.getDescription())
+                .price(saved.getPrice())
+                .imageUrl(saved.getImageUrl())
+                .available(saved.isAvailable())
+                .build();
+    }
+
+    @Override
+    public MenuItemResponse updateMenuItem(Long id, MenuItemRequest request) {
+        MenuItem item = menuItemRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Menu item not found"));
+
+        MenuCategory category = menuCategoryRepository.findById(request.getCategoryId())
+                .orElseThrow(() -> new ResourceNotFoundException("Category not found"));
+
+        item.setCategory(category);
+        item.setName(request.getName());
+        item.setDescription(request.getDescription());
+        item.setPrice(request.getPrice());
+        item.setImageUrl(request.getImageUrl());
+        item.setAvailable(request.getAvailable() != null ? request.getAvailable() : item.isAvailable());
+
+        MenuItem saved = menuItemRepository.save(item);
+
+        return MenuItemResponse.builder()
+                .id(saved.getId())
+                .categoryId(category.getId())
+                .name(saved.getName())
+                .description(saved.getDescription())
+                .price(saved.getPrice())
+                .imageUrl(saved.getImageUrl())
+                .available(saved.isAvailable())
+                .build();
+    }
+
+    @Override
+    public void deleteMenuItem(Long id) {
+        MenuItem item = menuItemRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Menu item not found"));
+        menuItemRepository.delete(item);
+        log.info("Deleted menu item {}", id);
     }
 
     private void validatePagination(int page, int size) {

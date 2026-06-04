@@ -1,16 +1,23 @@
 package com.mahmoud.reservation.service.reservation;
 
+import com.mahmoud.reservation.dto.common.PageResponse;
 import com.mahmoud.reservation.dto.reservation.CreateReservationRequest;
 import com.mahmoud.reservation.dto.reservation.ReservationResponse;
 import com.mahmoud.reservation.dto.table.DiningTableResponse;
 import com.mahmoud.reservation.entity.DiningTable;
 import com.mahmoud.reservation.entity.Reservation;
 import com.mahmoud.reservation.enums.ReservationStatus;
+import com.mahmoud.reservation.enums.TableStatus;
 import com.mahmoud.reservation.exception.*;
 import com.mahmoud.reservation.mapper.ReservationMapper;
 import com.mahmoud.reservation.repository.DiningTableRepository;
 import com.mahmoud.reservation.repository.ReservationRepository;
 import lombok.RequiredArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -22,8 +29,11 @@ import java.util.List;
 @Transactional
 public class ReservationServiceImpl implements ReservationService {
 
+    private static final Logger log = LoggerFactory.getLogger(ReservationServiceImpl.class);
+
     private final ReservationRepository reservationRepository;
     private final DiningTableRepository diningTableRepository;
+    private final ReservationMapper reservationMapper;
 
     @Override
     public ReservationResponse createReservation(CreateReservationRequest request, Long userId) {
@@ -41,7 +51,7 @@ public class ReservationServiceImpl implements ReservationService {
 
         List<ReservationStatus> statuses = List.of(
                 ReservationStatus.PENDING,
-                ReservationStatus.CONFIRMED
+                ReservationStatus.APPROVED
         );
 
         boolean conflict = reservationRepository.existsConflict(
@@ -62,18 +72,26 @@ public class ReservationServiceImpl implements ReservationService {
                 .endTime(request.getEndTime())
                 .numberOfGuests(request.getNumberOfGuests())
                 .specialRequest(request.getSpecialRequest())
-                .status(ReservationStatus.CONFIRMED)
+                .status(ReservationStatus.PENDING)
                 .build();
 
-        return ReservationMapper.toResponse(reservationRepository.save(reservation));
+        return reservationMapper.toResponse(reservationRepository.save(reservation));
     }
 
     @Override
     @Transactional(readOnly = true)
-    public List<ReservationResponse> getUserReservations(Long userId) {
-        return ReservationMapper.toResponseList(
-                reservationRepository.findByUserIdWithDetails(userId)
-        );
+    public PageResponse<ReservationResponse> getUserReservations(Long userId, int page, int size) {
+        PageRequest pageable = PageRequest.of(page, size);
+        Page<Reservation> result = reservationRepository.findByUserIdWithDetails(userId, pageable);
+
+        return PageResponse.<ReservationResponse>builder()
+                .content(reservationMapper.toResponseList(result.getContent()))
+                .page(result.getNumber())
+                .size(result.getSize())
+                .totalElements(result.getTotalElements())
+                .totalPages(result.getTotalPages())
+                .last(result.isLast())
+                .build();
     }
 
     @Override
@@ -104,7 +122,7 @@ public class ReservationServiceImpl implements ReservationService {
             throw new ForbiddenException("Access denied");
         }
 
-        return ReservationMapper.toResponse(reservation);
+        return reservationMapper.toResponse(reservation);
     }
 
     @Override
@@ -117,14 +135,15 @@ public class ReservationServiceImpl implements ReservationService {
 
         List<ReservationStatus> statuses = List.of(
                 ReservationStatus.PENDING,
-                ReservationStatus.CONFIRMED
+                ReservationStatus.APPROVED
         );
 
         return diningTableRepository.findAvailableTables(
                         restaurantId,
                         startTime,
                         endTime,
-                        statuses
+                        statuses,
+                        TableStatus.AVAILABLE
                 )
                 .stream()
                 .map(t -> DiningTableResponse.builder()
@@ -134,5 +153,17 @@ public class ReservationServiceImpl implements ReservationService {
                         .restaurantId(restaurantId)
                         .build())
                 .toList();
+    }
+
+    @Scheduled(fixedRate = 3_600_000)
+    @Transactional
+    public void completeExpiredReservations() {
+        List<Reservation> expired = reservationRepository
+                .findByStatusAndEndTimeBefore(ReservationStatus.APPROVED, Instant.now());
+
+        if (!expired.isEmpty()) {
+            expired.forEach(r -> r.setStatus(ReservationStatus.COMPLETED));
+            log.info("Completed {} expired reservations", expired.size());
+        }
     }
 }

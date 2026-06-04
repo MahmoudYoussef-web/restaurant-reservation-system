@@ -1,5 +1,6 @@
 package com.mahmoud.reservation.service.reservation;
 
+import com.mahmoud.reservation.dto.common.PageResponse;
 import com.mahmoud.reservation.dto.reservation.CreateReservationRequest;
 import com.mahmoud.reservation.dto.reservation.ReservationResponse;
 import com.mahmoud.reservation.dto.table.DiningTableResponse;
@@ -11,7 +12,7 @@ public interface ReservationService {
 
     ReservationResponse createReservation(CreateReservationRequest request, Long userId);
 
-    List<ReservationResponse> getUserReservations(Long userId);
+    PageResponse<ReservationResponse> getUserReservations(Long userId, int page, int size);
 
     void cancelReservation(Long reservationId, Long userId);
 

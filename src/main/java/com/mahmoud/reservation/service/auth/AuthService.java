@@ -1,8 +1,6 @@
 package com.mahmoud.reservation.service.auth;
 
-import com.mahmoud.reservation.dto.auth.AuthResponse;
-import com.mahmoud.reservation.dto.auth.LoginRequest;
-import com.mahmoud.reservation.dto.auth.RegisterRequest;
+import com.mahmoud.reservation.dto.auth.*;
 
 public interface AuthService {
 
@@ -13,4 +11,8 @@ public interface AuthService {
     AuthResponse refreshToken(String refreshToken, String tokenId);
 
     void logout(String tokenId);
+
+    void forgotPassword(ForgotPasswordRequest request);
+
+    void resetPassword(ResetPasswordRequest request);
 }

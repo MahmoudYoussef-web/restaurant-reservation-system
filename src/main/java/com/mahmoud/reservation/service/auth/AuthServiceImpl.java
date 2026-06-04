@@ -1,8 +1,6 @@
 package com.mahmoud.reservation.service.auth;
 
-import com.mahmoud.reservation.dto.auth.AuthResponse;
-import com.mahmoud.reservation.dto.auth.LoginRequest;
-import com.mahmoud.reservation.dto.auth.RegisterRequest;
+import com.mahmoud.reservation.dto.auth.*;
 import com.mahmoud.reservation.entity.RefreshToken;
 import com.mahmoud.reservation.entity.Role;
 import com.mahmoud.reservation.entity.User;
@@ -18,6 +16,9 @@ import com.mahmoud.reservation.repository.UserRoleRepository;
 import com.mahmoud.reservation.security.jwt.JwtUtils;
 import com.mahmoud.reservation.security.user.ShopUserDetails;
 import lombok.RequiredArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.security.authentication.*;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -28,11 +29,15 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 
 @Service
 @RequiredArgsConstructor
 public class AuthServiceImpl implements AuthService {
+
+    private static final Logger log = LoggerFactory.getLogger(AuthServiceImpl.class);
 
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
@@ -41,6 +46,8 @@ public class AuthServiceImpl implements AuthService {
     private final JwtUtils jwtUtils;
     private final AuthenticationManager authenticationManager;
     private final PasswordEncoder passwordEncoder;
+
+    private final Map<String, String> resetTokens = new ConcurrentHashMap<>();
 
     @Override
     @Transactional
@@ -166,6 +173,51 @@ public class AuthServiceImpl implements AuthService {
         token.setRevokedAt(Instant.now());
 
         return generateTokens(token.getUser());
+    }
+
+    @Scheduled(cron = "0 0 */6 * * *")
+    @Transactional
+    public void cleanupExpiredTokens() {
+        List<RefreshToken> allTokens = refreshTokenRepository.findAll();
+        int count = 0;
+        for (RefreshToken token : allTokens) {
+            if (!token.isValid()) {
+                token.setRevoked(true);
+                count++;
+            }
+        }
+        if (count > 0) {
+            log.info("Cleaned up {} expired/revoked refresh tokens", count);
+        }
+    }
+
+    @Override
+    @Transactional
+    public void forgotPassword(ForgotPasswordRequest request) {
+        String email = request.getEmail().toLowerCase().trim();
+        userRepository.findByEmailWithRoles(email).ifPresent(user -> {
+            String token = UUID.randomUUID().toString();
+            resetTokens.put(token, email);
+            log.info("Password reset token generated for user {}", email);
+        });
+    }
+
+    @Override
+    @Transactional
+    public void resetPassword(ResetPasswordRequest request) {
+        String email = resetTokens.get(request.getToken());
+        if (email == null) {
+            throw new BadRequestException("Invalid or expired reset token");
+        }
+
+        User user = userRepository.findByEmailWithRoles(email)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+
+        user.setPasswordHash(passwordEncoder.encode(request.getNewPassword()));
+        userRepository.save(user);
+        resetTokens.remove(request.getToken());
+
+        log.info("Password reset completed for user {}", email);
     }
 
     @Override
