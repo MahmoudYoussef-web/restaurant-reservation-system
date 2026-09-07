@@ -2,10 +2,12 @@ package com.mahmoud.reservation.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.SQLRestriction;
 import org.hibernate.annotations.Where;
 
 import java.time.Instant;
 
+@SQLRestriction("is_deleted = false")
 @Entity
 @Where(clause = "is_deleted = false")
 @Table(

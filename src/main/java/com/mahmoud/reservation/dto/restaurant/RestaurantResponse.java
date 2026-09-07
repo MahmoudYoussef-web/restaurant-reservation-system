@@ -19,4 +19,6 @@ public class RestaurantResponse {
     private String phone;
     private String description;
     private String imageUrl;
+    private String cuisine;
+    private String priceRange;
 }

@@ -3,8 +3,10 @@ package com.mahmoud.reservation.entity;
 import com.mahmoud.reservation.enums.RoleName;
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.SQLRestriction;
 import org.hibernate.annotations.Where;
 
+@SQLRestriction("is_deleted = false")
 @Entity
 @Where(clause = "is_deleted = false")
 @Table(

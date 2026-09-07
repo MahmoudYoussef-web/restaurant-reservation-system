@@ -1,12 +1,14 @@
 package com.mahmoud.reservation.entity;
 
 import jakarta.persistence.*;
+import org.hibernate.annotations.SQLRestriction;
 import lombok.*;
 import lombok.experimental.SuperBuilder;
 
 import java.math.BigDecimal;
 import java.time.Instant;
 
+@SQLRestriction("is_deleted = false")
 @Entity
 @Table(name = "invoices")
 @Getter

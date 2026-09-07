@@ -46,6 +46,17 @@ public class AdminServiceImpl implements AdminService {
         return time != null ? time.toString() : null;
     }
 
+    private LocalTime parseTime(String value, String field) {
+        if (value == null) {
+            return null;
+        }
+        try {
+            return LocalTime.parse(value);
+        } catch (java.time.format.DateTimeParseException e) {
+            throw new BadRequestException("Invalid " + field + " format, expected HH:mm");
+        }
+    }
+
     private RestaurantResponse toRestaurantResponse(Restaurant r) {
         return RestaurantResponse.builder()
                 .id(r.getId())
@@ -56,6 +67,8 @@ public class AdminServiceImpl implements AdminService {
                 .phone(r.getPhone())
                 .description(r.getDescription())
                 .imageUrl(r.getImageUrl())
+                .cuisine(r.getCuisine())
+                .priceRange(r.getPriceRange())
                 .build();
     }
 
@@ -78,11 +91,13 @@ public class AdminServiceImpl implements AdminService {
         Restaurant restaurant = Restaurant.builder()
                 .name(request.getName())
                 .location(request.getLocation())
-                .openingTime(request.getOpeningTime() != null ? LocalTime.parse(request.getOpeningTime()) : null)
-                .closingTime(request.getClosingTime() != null ? LocalTime.parse(request.getClosingTime()) : null)
+                .openingTime(parseTime(request.getOpeningTime(), "openingTime"))
+                .closingTime(parseTime(request.getClosingTime(), "closingTime"))
                 .phone(request.getPhone())
                 .description(request.getDescription())
                 .imageUrl(request.getImageUrl())
+                .cuisine(request.getCuisine())
+                .priceRange(request.getPriceRange())
                 .build();
 
         Restaurant saved = restaurantRepository.save(restaurant);
@@ -100,11 +115,13 @@ public class AdminServiceImpl implements AdminService {
 
         restaurant.setName(request.getName());
         restaurant.setLocation(request.getLocation());
-        restaurant.setOpeningTime(request.getOpeningTime() != null ? LocalTime.parse(request.getOpeningTime()) : null);
-        restaurant.setClosingTime(request.getClosingTime() != null ? LocalTime.parse(request.getClosingTime()) : null);
+        restaurant.setOpeningTime(parseTime(request.getOpeningTime(), "openingTime"));
+        restaurant.setClosingTime(parseTime(request.getClosingTime(), "closingTime"));
         restaurant.setPhone(request.getPhone());
         restaurant.setDescription(request.getDescription());
         restaurant.setImageUrl(request.getImageUrl());
+        restaurant.setCuisine(request.getCuisine());
+        restaurant.setPriceRange(request.getPriceRange());
 
         Restaurant saved = restaurantRepository.save(restaurant);
         log.info("Updated restaurant {}: {}", id, request.getName());
@@ -115,8 +132,9 @@ public class AdminServiceImpl implements AdminService {
     public void deleteRestaurant(Long id) {
         Restaurant restaurant = restaurantRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Restaurant not found"));
-        restaurantRepository.delete(restaurant);
-        log.info("Deleted restaurant {}", id);
+        restaurant.setDeleted(true);
+        restaurantRepository.save(restaurant);
+        log.info("Soft deleted restaurant {}", id);
     }
 
     @Override
@@ -145,6 +163,12 @@ public class AdminServiceImpl implements AdminService {
         DiningTable table = diningTableRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Dining table not found"));
 
+        if (!table.getTableNumber().equals(request.getTableNumber())
+                && diningTableRepository.existsByRestaurantIdAndTableNumber(
+                        table.getRestaurant().getId(), request.getTableNumber())) {
+            throw new ConflictException("Table number already exists in this restaurant");
+        }
+
         table.setTableNumber(request.getTableNumber());
         table.setCapacity(request.getCapacity());
 
@@ -157,8 +181,9 @@ public class AdminServiceImpl implements AdminService {
     public void deleteDiningTable(Long id) {
         DiningTable table = diningTableRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Dining table not found"));
-        diningTableRepository.delete(table);
-        log.info("Deleted dining table {}", id);
+        table.setDeleted(true);
+        diningTableRepository.save(table);
+        log.info("Soft deleted dining table {}", id);
     }
 
     @Override
@@ -309,6 +334,11 @@ public class AdminServiceImpl implements AdminService {
         MenuCategory category = menuCategoryRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Category not found"));
 
+        if (!category.getName().equals(request.getName())
+                && menuCategoryRepository.existsByName(request.getName())) {
+            throw new ConflictException("Category already exists");
+        }
+
         category.setName(request.getName());
         category.setDescription(request.getDescription());
 
@@ -325,8 +355,9 @@ public class AdminServiceImpl implements AdminService {
     public void deleteCategory(Long id) {
         MenuCategory category = menuCategoryRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Category not found"));
-        menuCategoryRepository.delete(category);
-        log.info("Deleted menu category {}", id);
+        category.setDeleted(true);
+        menuCategoryRepository.save(category);
+        log.info("Soft deleted menu category {}", id);
     }
 
     @Override
@@ -388,13 +419,14 @@ public class AdminServiceImpl implements AdminService {
     public void deleteMenuItem(Long id) {
         MenuItem item = menuItemRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Menu item not found"));
-        menuItemRepository.delete(item);
-        log.info("Deleted menu item {}", id);
+        item.setDeleted(true);
+        menuItemRepository.save(item);
+        log.info("Soft deleted menu item {}", id);
     }
 
     private void validatePagination(int page, int size) {
-        if (page < 0 || size <= 0) {
-            throw new BadRequestException("Invalid pagination parameters");
+        if (page < 0 || size < 1 || size > 100) {
+            throw new BadRequestException("Invalid pagination parameters (page >= 0, 1 <= size <= 100)");
         }
     }
 }

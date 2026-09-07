@@ -1,5 +1,6 @@
 package com.mahmoud.reservation.controller;
 
+import com.mahmoud.reservation.dto.common.MessageResponse;
 import com.mahmoud.reservation.dto.common.PageResponse;
 import com.mahmoud.reservation.dto.review.CreateReviewRequest;
 import com.mahmoud.reservation.dto.review.ReviewResponse;
@@ -42,6 +43,22 @@ public class ReviewController {
             @RequestParam(defaultValue = "10") int size
     ) {
         return ResponseEntity.ok(reviewService.getReviewsByRestaurant(restaurantId, page, size));
+    }
+
+    @Operation(summary = "Update own review")
+    @PutMapping("/reviews/{reviewId}")
+    public ResponseEntity<ReviewResponse> updateReview(
+            @PathVariable Long reviewId,
+            @Valid @RequestBody CreateReviewRequest request
+    ) {
+        return ResponseEntity.ok(reviewService.updateReview(reviewId, request, getCurrentUserId()));
+    }
+
+    @Operation(summary = "Delete own review")
+    @DeleteMapping("/reviews/{reviewId}")
+    public ResponseEntity<MessageResponse> deleteReview(@PathVariable Long reviewId) {
+        reviewService.deleteReview(reviewId, getCurrentUserId());
+        return ResponseEntity.ok(new MessageResponse("Review deleted successfully"));
     }
 
     private Long getCurrentUserId() {

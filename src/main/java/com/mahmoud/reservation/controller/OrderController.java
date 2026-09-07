@@ -60,6 +60,21 @@ public class OrderController {
         return ResponseEntity.ok(orderService.getOrdersByTable(tableId));
     }
 
+    @Operation(summary = "Cancel order")
+    @DeleteMapping("/{id}")
+    public ResponseEntity<OrderResponse> cancelOrder(@PathVariable Long id) {
+        return ResponseEntity.ok(orderService.cancelOrder(id));
+    }
+
+    @Operation(summary = "Remove item from order")
+    @DeleteMapping("/{id}/items/{itemId}")
+    public ResponseEntity<OrderResponse> removeItem(
+            @PathVariable Long id,
+            @PathVariable Long itemId
+    ) {
+        return ResponseEntity.ok(orderService.removeItem(id, itemId));
+    }
+
     private Long getCurrentUserId() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication == null || !(authentication.getPrincipal() instanceof ShopUserDetails userDetails)) {

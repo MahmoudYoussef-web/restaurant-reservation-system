@@ -1,6 +1,7 @@
 package com.mahmoud.reservation.entity;
 
 import jakarta.persistence.*;
+import org.hibernate.annotations.SQLRestriction;
 import lombok.*;
 import lombok.experimental.SuperBuilder;
 
@@ -8,6 +9,7 @@ import java.time.LocalTime;
 import java.util.HashSet;
 import java.util.Set;
 
+@SQLRestriction("is_deleted = false")
 @Entity
 @Table(name = "restaurants",
         indexes = {
@@ -41,6 +43,12 @@ public class Restaurant extends BaseEntity {
 
     @Column(name = "image_url", length = 500)
     private String imageUrl;
+
+    @Column(name = "cuisine", length = 50)
+    private String cuisine;
+
+    @Column(name = "price_range", length = 10)
+    private String priceRange;
 
     @OneToMany(mappedBy = "restaurant",
             cascade = CascadeType.ALL,

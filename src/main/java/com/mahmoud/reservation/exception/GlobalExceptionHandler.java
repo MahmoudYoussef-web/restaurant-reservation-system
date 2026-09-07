@@ -1,12 +1,17 @@
 package com.mahmoud.reservation.exception;
 
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.validation.ConstraintViolationException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -113,5 +118,49 @@ public class GlobalExceptionHandler {
         );
 
         return ResponseEntity.internalServerError().body(response);
+    }
+
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ResponseEntity<ApiErrorResponse> handleIllegalArgument(
+            IllegalArgumentException ex,
+            HttpServletRequest request
+    ) {
+        log.warn("Bad request: {}", ex.getMessage());
+        return ResponseEntity.badRequest().body(new ApiErrorResponse(
+                400, ex.getMessage() != null ? ex.getMessage() : "Invalid request",
+                "BAD_REQUEST", request.getRequestURI()));
+    }
+
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    public ResponseEntity<ApiErrorResponse> handleDataIntegrity(
+            DataIntegrityViolationException ex,
+            HttpServletRequest request
+    ) {
+        log.warn("Data integrity violation: {}", ex.getMessage());
+        return ResponseEntity.status(409).body(new ApiErrorResponse(
+                409, "Resource already exists or is in use",
+                "DATA_CONFLICT", request.getRequestURI()));
+    }
+
+    @ExceptionHandler(ConstraintViolationException.class)
+    public ResponseEntity<ApiErrorResponse> handleConstraintViolation(
+            ConstraintViolationException ex,
+            HttpServletRequest request
+    ) {
+        return ResponseEntity.badRequest().body(new ApiErrorResponse(
+                400, "Validation failed: " + ex.getMessage(),
+                "VALIDATION_ERROR", request.getRequestURI()));
+    }
+
+    @ExceptionHandler({MissingServletRequestParameterException.class,
+            MethodArgumentTypeMismatchException.class,
+            HttpMessageNotReadableException.class})
+    public ResponseEntity<ApiErrorResponse> handleBadInput(
+            Exception ex,
+            HttpServletRequest request
+    ) {
+        return ResponseEntity.badRequest().body(new ApiErrorResponse(
+                400, "Invalid request parameters or body",
+                "BAD_REQUEST", request.getRequestURI()));
     }
 }

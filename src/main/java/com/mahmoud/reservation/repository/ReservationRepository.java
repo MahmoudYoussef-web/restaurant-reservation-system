@@ -65,4 +65,17 @@ public interface ReservationRepository extends JpaRepository<Reservation, Long> 
             Instant endTime,
             List<ReservationStatus> statuses
     );
+
+    @Query("""
+        SELECT COUNT(r) FROM Reservation r
+        JOIN r.table t
+        WHERE r.userId = :userId
+        AND t.restaurant.id = :restaurantId
+        AND r.status = :status
+    """)
+    long countByUserIdAndRestaurantIdAndStatus(
+            @Param("userId") Long userId,
+            @Param("restaurantId") Long restaurantId,
+            @Param("status") ReservationStatus status
+    );
 }

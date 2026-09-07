@@ -3,6 +3,8 @@ package com.mahmoud.reservation.security.ratelimit;
 import jakarta.servlet.*;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 
@@ -15,10 +17,13 @@ import java.util.concurrent.atomic.AtomicInteger;
 @Order(1)
 public class RateLimitFilter implements Filter {
 
+    private static final Logger log = LoggerFactory.getLogger(RateLimitFilter.class);
+
     private final Map<String, AtomicInteger> requestCounts = new ConcurrentHashMap<>();
+    private final Map<String, Long> windowStarts = new ConcurrentHashMap<>();
     private final Map<String, Long> blockTimestamps = new ConcurrentHashMap<>();
 
-    private static final int MAX_REQUESTS = 10;
+    private static final int MAX_REQUESTS = 20;
     private static final long TIME_WINDOW_MS = 60_000;
     private static final long BLOCK_DURATION_MS = 120_000;
 
@@ -29,7 +34,7 @@ public class RateLimitFilter implements Filter {
         HttpServletRequest httpRequest = (HttpServletRequest) request;
         String path = httpRequest.getRequestURI();
 
-        if (!path.startsWith("/api/auth/login") && !path.startsWith("/api/auth/register")) {
+        if (!isProtectedPath(path)) {
             chain.doFilter(request, response);
             return;
         }
@@ -38,16 +43,19 @@ public class RateLimitFilter implements Filter {
         long now = System.currentTimeMillis();
 
         Long blockedUntil = blockTimestamps.get(ip);
-        if (blockedUntil != null && now < blockedUntil) {
-            HttpServletResponse httpResponse = (HttpServletResponse) response;
-            httpResponse.setStatus(429);
-            httpResponse.setContentType("application/json");
-            httpResponse.getWriter().write("{\"message\":\"Too many requests. Try again later.\"}");
-            return;
+        if (blockedUntil != null) {
+            if (now < blockedUntil) {
+                reject((HttpServletResponse) response, (blockedUntil - now) / 1000);
+                return;
+            }
+            blockTimestamps.remove(ip);
+            requestCounts.remove(ip);
+            windowStarts.remove(ip);
         }
 
-        if (blockedUntil != null && now >= blockedUntil) {
-            blockTimestamps.remove(ip);
+        long windowStart = windowStarts.computeIfAbsent(ip, k -> now);
+        if (now - windowStart >= TIME_WINDOW_MS) {
+            windowStarts.put(ip, now);
             requestCounts.remove(ip);
         }
 
@@ -56,21 +64,36 @@ public class RateLimitFilter implements Filter {
         int count = counter.incrementAndGet();
         if (count > MAX_REQUESTS) {
             blockTimestamps.put(ip, now + BLOCK_DURATION_MS);
-            HttpServletResponse httpResponse = (HttpServletResponse) response;
-            httpResponse.setStatus(429);
-            httpResponse.setContentType("application/json");
-            httpResponse.getWriter().write("{\"message\":\"Too many requests. Try again later.\"}");
+            requestCounts.remove(ip);
+            windowStarts.remove(ip);
+            log.warn("Rate limit exceeded for IP {}", ip);
+            reject((HttpServletResponse) response, BLOCK_DURATION_MS / 1000);
             return;
         }
 
         chain.doFilter(request, response);
     }
 
+    private boolean isProtectedPath(String path) {
+        return path.startsWith("/api/auth/login")
+                || path.startsWith("/api/auth/register")
+                || path.startsWith("/api/auth/refresh")
+                || path.startsWith("/api/auth/forgot-password")
+                || path.startsWith("/api/auth/reset-password");
+    }
+
+    private void reject(HttpServletResponse response, long retryAfterSeconds) throws IOException {
+        response.setStatus(429);
+        response.setContentType("application/json");
+        response.setHeader("Retry-After", String.valueOf(Math.max(retryAfterSeconds, 1)));
+        response.getWriter().write("{\"message\":\"Too many requests. Try again later.\"}");
+    }
+
     private String getClientIp(HttpServletRequest request) {
-        String ip = request.getHeader("X-Forwarded-For");
-        if (ip == null || ip.isEmpty()) {
-            ip = request.getRemoteAddr();
+        String forwarded = request.getHeader("X-Forwarded-For");
+        if (forwarded != null && !forwarded.isBlank()) {
+            return forwarded.split(",")[0].trim();
         }
-        return ip;
+        return request.getRemoteAddr();
     }
 }

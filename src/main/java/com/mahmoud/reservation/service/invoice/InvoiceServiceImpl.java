@@ -30,11 +30,11 @@ public class InvoiceServiceImpl implements InvoiceService {
     private final OrderRepository orderRepository;
 
     @Override
-    @Transactional(readOnly = true)
+    @Transactional
     public InvoiceResponse getInvoiceByOrder(Long orderId) {
-        Invoice invoice = invoiceRepository.findByOrderId(orderId)
-                .orElseGet(() -> generateInvoice(orderId));
-        return toResponse(invoice);
+        return invoiceRepository.findByOrderId(orderId)
+                .map(this::toResponse)
+                .orElseGet(() -> toResponse(generateInvoice(orderId)));
     }
 
     @Override

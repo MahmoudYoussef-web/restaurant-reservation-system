@@ -47,7 +47,10 @@ public class AuthServiceImpl implements AuthService {
     private final AuthenticationManager authenticationManager;
     private final PasswordEncoder passwordEncoder;
 
-    private final Map<String, String> resetTokens = new ConcurrentHashMap<>();
+    private final Map<String, ResetRecord> resetTokens = new ConcurrentHashMap<>();
+
+    private record ResetRecord(String email, Instant expiresAt) {
+    }
 
     @Override
     @Transactional
@@ -197,7 +200,7 @@ public class AuthServiceImpl implements AuthService {
         String email = request.getEmail().toLowerCase().trim();
         userRepository.findByEmailWithRoles(email).ifPresent(user -> {
             String token = UUID.randomUUID().toString();
-            resetTokens.put(token, email);
+            resetTokens.put(token, new ResetRecord(email, Instant.now().plusSeconds(900)));
             log.info("Password reset token generated for user {}", email);
         });
     }
@@ -205,19 +208,20 @@ public class AuthServiceImpl implements AuthService {
     @Override
     @Transactional
     public void resetPassword(ResetPasswordRequest request) {
-        String email = resetTokens.get(request.getToken());
-        if (email == null) {
+        ResetRecord record = resetTokens.get(request.getToken());
+        if (record == null || Instant.now().isAfter(record.expiresAt())) {
+            resetTokens.remove(request.getToken());
             throw new BadRequestException("Invalid or expired reset token");
         }
 
-        User user = userRepository.findByEmailWithRoles(email)
+        User user = userRepository.findByEmailWithRoles(record.email())
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
         user.setPasswordHash(passwordEncoder.encode(request.getNewPassword()));
         userRepository.save(user);
         resetTokens.remove(request.getToken());
 
-        log.info("Password reset completed for user {}", email);
+        log.info("Password reset completed for user {}", record.email());
     }
 
     @Override

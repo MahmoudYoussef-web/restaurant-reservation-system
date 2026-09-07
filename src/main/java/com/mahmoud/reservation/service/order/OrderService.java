@@ -12,6 +12,10 @@ public interface OrderService {
 
     OrderResponse updateStatus(Long orderId, UpdateOrderStatusRequest request);
 
+    OrderResponse cancelOrder(Long orderId);
+
+    OrderResponse removeItem(Long orderId, Long itemId);
+
     OrderResponse getOrderById(Long orderId);
 
     List<OrderResponse> getOrdersByTable(Long tableId);

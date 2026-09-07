@@ -4,11 +4,13 @@ import com.mahmoud.reservation.entity.BaseEntity;
 import com.mahmoud.reservation.entity.DiningTable;
 import com.mahmoud.reservation.enums.ReservationStatus;
 import jakarta.persistence.*;
+import org.hibernate.annotations.SQLRestriction;
 import lombok.*;
 import lombok.experimental.SuperBuilder;
 
 import java.time.Instant;
 
+@SQLRestriction("is_deleted = false")
 @Entity
 @Table(name = "reservations",
         indexes = {

@@ -25,4 +25,8 @@ public class CreateRestaurantRequest {
     private String description;
 
     private String imageUrl;
+
+    private String cuisine;
+
+    private String priceRange;
 }

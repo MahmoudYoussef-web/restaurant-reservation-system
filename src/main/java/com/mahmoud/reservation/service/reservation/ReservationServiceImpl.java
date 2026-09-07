@@ -35,11 +35,17 @@ public class ReservationServiceImpl implements ReservationService {
     private final DiningTableRepository diningTableRepository;
     private final ReservationMapper reservationMapper;
 
+    private static final int MAX_PAGE_SIZE = 100;
+
     @Override
     public ReservationResponse createReservation(CreateReservationRequest request, Long userId) {
 
         if (!request.getStartTime().isBefore(request.getEndTime())) {
             throw new BadRequestException("Invalid time range");
+        }
+
+        if (!request.getStartTime().isAfter(Instant.now())) {
+            throw new BadRequestException("Reservation must start in the future");
         }
 
         DiningTable table = diningTableRepository.findWithLockById(request.getTableId())
@@ -81,6 +87,7 @@ public class ReservationServiceImpl implements ReservationService {
     @Override
     @Transactional(readOnly = true)
     public PageResponse<ReservationResponse> getUserReservations(Long userId, int page, int size) {
+        validatePagination(page, size);
         PageRequest pageable = PageRequest.of(page, size);
         Page<Reservation> result = reservationRepository.findByUserIdWithDetails(userId, pageable);
 
@@ -129,8 +136,16 @@ public class ReservationServiceImpl implements ReservationService {
     @Transactional(readOnly = true)
     public List<DiningTableResponse> getAvailableTables(Long restaurantId, Instant startTime, Instant endTime) {
 
+        if (startTime == null || endTime == null) {
+            throw new BadRequestException("Start time and end time are required");
+        }
+
         if (!startTime.isBefore(endTime)) {
             throw new BadRequestException("Invalid time range");
+        }
+
+        if (!startTime.isAfter(Instant.now())) {
+            throw new BadRequestException("Start time must be in the future");
         }
 
         List<ReservationStatus> statuses = List.of(
@@ -164,6 +179,12 @@ public class ReservationServiceImpl implements ReservationService {
         if (!expired.isEmpty()) {
             expired.forEach(r -> r.setStatus(ReservationStatus.COMPLETED));
             log.info("Completed {} expired reservations", expired.size());
+        }
+    }
+
+    private void validatePagination(int page, int size) {
+        if (page < 0 || size < 1 || size > MAX_PAGE_SIZE) {
+            throw new BadRequestException("Invalid pagination parameters (page >= 0, 1 <= size <= 100)");
         }
     }
 }

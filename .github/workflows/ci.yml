@@ -40,5 +40,5 @@ jobs:
           DB_URL: jdbc:mysql://localhost:3306/restaurant_reservation?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
           DB_USERNAME: root
           DB_PASSWORD: root
-          JWT_SECRET: test-jwt-secret-key-that-is-long-enough-for-hmac
+          JWT_SECRET: test-jwt-secret-key-that-is-long-enough-for-hmac-sha256-minimum-64-chars
           JWT_EXPIRATION: 86400000

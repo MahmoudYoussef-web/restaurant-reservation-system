@@ -1,12 +1,14 @@
 package com.mahmoud.reservation.entity;
 
 import jakarta.persistence.*;
+import org.hibernate.annotations.SQLRestriction;
 import lombok.*;
 import lombok.experimental.SuperBuilder;
 
 import java.util.HashSet;
 import java.util.Set;
 
+@SQLRestriction("is_deleted = false")
 @Entity
 @Table(name = "menu_categories")
 @Getter
