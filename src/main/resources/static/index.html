@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sofra — See what's free tonight in Cairo</title>
+  <meta name="description" content="Sofra shows live table availability for restaurants in Zamalek, Maadi and Sheikh Zayed, with menus, hours and reviews from verified diners." />
+  <meta name="theme-color" content="#1d130e" />
+  <meta property="og:title" content="Sofra — See what's free tonight in Cairo" />
+  <meta property="og:description" content="Live table availability, menus and verified reviews. Pick a time, book, show up hungry." />
+  <meta property="og:type" content="website" />
+  <meta property="og:image" content="http://localhost:8080/og-cover.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;0,9..144,700;1,9..144,500&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/styles.css" />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23BC3F2A'/%3E%3Cpath d='M18 40h28M32 12v6M20 40c0-9 5-15 12-15s12 6 12 15' stroke='%23FAF6EF' stroke-width='4' fill='none' stroke-linecap='round'/%3E%3Ccircle cx='32' cy='14' r='3' fill='%23FAF6EF'/%3E%3C/svg%3E" />
+</head>
+<body>
+  <div class="grain" aria-hidden="true"></div>
+
+  <!-- ══════════ NAV ══════════ -->
+  <header class="nav" id="nav">
+    <div class="container nav-inner">
+      <a class="brand" href="#top" data-nav="home">
+        <svg class="brand-mark" viewBox="0 0 64 64" aria-hidden="true"><rect width="64" height="64" rx="14" fill="#BC3F2A"/><path d="M18 40h28M32 12v6M20 40c0-9 5-15 12-15s12 6 12 15" stroke="#FAF6EF" stroke-width="4" fill="none" stroke-linecap="round"/><circle cx="32" cy="14" r="3" fill="#FAF6EF"/></svg>
+        <span>Sofra <em>سفرة</em></span>
+      </a>
+      <nav class="nav-links">
+        <a href="#discover" data-nav="home">Restaurants</a>
+        <a href="#collections" data-nav="home">Collections</a>
+        <a href="#how" data-nav="home">How booking works</a>
+        <a href="/swagger-ui/index.html" target="_blank" rel="noopener">API <span class="ext" aria-hidden="true"></span></a>
+      </nav>
+      <div class="nav-right">
+        <span class="open-pill" id="open-pill" title="Based on posted opening hours">…</span>
+        <a class="btn btn-red btn-sm" href="#discover" data-nav="book">Find a table</a>
+      </div>
+    </div>
+  </header>
+
+  <main id="top">
+    <!-- ══════════ HOME VIEW ══════════ -->
+    <div id="view-home">
+      <section class="hero hero-compact">
+        <div class="hero-bg"></div>
+        <div class="hero-shade"></div>
+        <div class="container hero-content">
+          <h1>Discover where to eat <em>in Cairo.</em></h1>
+          <p class="hero-sub">Live tables, honest menus, verified reviews. Pick an area and a night — the board updates itself.</p>
+
+          <form class="searchbar" id="searchbar" aria-label="Find a table">
+            <label class="seg">
+              <span>Area</span>
+              <select id="sb-area">
+                <option value="">All of Cairo</option>
+                <option value="zamalek">Zamalek</option>
+                <option value="maadi">Maadi</option>
+                <option value="zayed">Sheikh Zayed</option>
+              </select>
+            </label>
+            <label class="seg">
+              <span>Date</span>
+              <input type="date" id="sb-date" />
+            </label>
+            <label class="seg">
+              <span>Guests</span>
+              <select id="sb-party"></select>
+            </label>
+            <label class="seg grow">
+              <span>Name or cuisine</span>
+              <input type="search" id="sb-q" placeholder="Sushi, Italia, grill…" autocomplete="off" />
+            </label>
+            <button class="btn btn-red btn-lg" type="submit">Search</button>
+          </form>
+        </div>
+      </section>
+
+      <section class="section board" id="discover">
+        <div class="container">
+          <div class="board-head">
+            <div>
+              <h2 id="results-title">Available tonight in Cairo</h2>
+              <p class="lede" id="results-sub">Live availability · verified reviews.</p>
+            </div>
+          </div>
+          <div class="filterbar" id="filterbar" aria-label="Filters">
+            <div class="fgroup" id="cuisine-chips" aria-label="Cuisine"></div>
+            <span class="fdiv" aria-hidden="true"></span>
+            <div class="fgroup" id="price-chips" aria-label="Price">
+              <button class="chip active" data-p="">Any price</button>
+              <button class="chip" data-p="$">$</button>
+              <button class="chip" data-p="$$">$$</button>
+              <button class="chip" data-p="$$$">$$$</button>
+            </div>
+            <span class="fdiv" aria-hidden="true"></span>
+            <div class="fgroup">
+              <button class="chip toggle" id="f-open" aria-pressed="false">Open now</button>
+              <button class="chip toggle" id="f-top" aria-pressed="false">Top rated 4.5+</button>
+            </div>
+          </div>
+          <div class="grid" id="grid"></div>
+          <div class="pager">
+            <button id="prev" class="btn btn-ghost btn-sm">← Prev</button>
+            <span id="pageinfo" class="muted"></span>
+            <button id="next" class="btn btn-ghost btn-sm">Next →</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="how-compact" id="how">
+        <div class="container how-steps">
+          <div class="hstep"><span class="n">01</span><div><b>Pick a real slot</b><span>Every chip is a free table, read live.</span></div></div>
+          <div class="hstep"><span class="n">02</span><div><b>Read the room</b><span>Menus, hours, post-visit reviews.</span></div></div>
+          <div class="hstep"><span class="n">03</span><div><b>Book in one request</b><span><code>POST /api/reservations</code>, confirmed fast.</span></div></div>
+          <div class="hstep"><span class="n">04</span><div><b>Eat, then rate</b><span>Stars unlock after the meal.</span></div></div>
+        </div>
+      </section>
+
+      <section class="section collections-sec" id="collections">
+        <div class="container">
+          <div class="section-head split">
+            <div>
+              <p class="kicker">Collections</p>
+              <h2>Not sure? <em>Start here.</em></h2>
+            </div>
+            <p class="lede" style="margin:0">Five short lists, kept by hand.</p>
+          </div>
+          <div class="collections" id="collections-row"></div>
+        </div>
+      </section>
+    </div>
+
+    <!-- ══════════ VENUE VIEW ══════════ -->
+    <div id="view-venue" class="hidden">
+      <div class="container">
+        <button class="btn btn-ghost btn-sm back" id="venue-back">← All restaurants</button>
+        <div id="venue-body"></div>
+      </div>
+      <div class="mobile-book hidden" id="mobile-book">
+        <div><b id="mb-name"></b><span class="muted" id="mb-meta"></span></div>
+        <button class="btn btn-red" id="mb-go">Book</button>
+      </div>
+    </div>
+  </main>
+
+  <footer>
+    <div class="container foot-grid">
+      <div>
+        <a class="brand light" href="#top" data-nav="home">
+          <svg class="brand-mark" viewBox="0 0 64 64" aria-hidden="true"><rect width="64" height="64" rx="14" fill="#BC3F2A"/><path d="M18 40h28M32 12v6M20 40c0-9 5-15 12-15s12 6 12 15" stroke="#FAF6EF" stroke-width="4" fill="none" stroke-linecap="round"/><circle cx="32" cy="14" r="3" fill="#FAF6EF"/></svg>
+          <span>Sofra <em>سفرة</em></span>
+        </a>
+        <p class="muted">A reservation book for Cairo, kept live. Built on Spring Boot 3 with a public REST API.</p>
+        <p class="muted small">Zamalek · Maadi · Sheikh Zayed<br />Daily 12:00 PM – 11:59 PM · <a href="tel:+201001234567">+20 100 123 4567</a></p>
+      </div>
+      <div>
+        <h4>Eat</h4>
+        <a href="#discover" data-nav="home">All restaurants</a>
+        <a href="#collections" data-nav="home">Collections</a>
+        <a href="#how" data-nav="home">How booking works</a>
+      </div>
+      <div>
+        <h4>Build</h4>
+        <a href="/swagger-ui/index.html" target="_blank" rel="noopener">Swagger UI</a>
+        <a href="/v3/api-docs" target="_blank" rel="noopener">OpenAPI JSON</a>
+        <a href="/actuator/health" target="_blank" rel="noopener">Health check</a>
+      </div>
+    </div>
+    <div class="container foot-bottom">
+      <span>© 2026 Sofra · Demo data, real API</span>
+      <span class="muted">Set a table. Keep it live.</span>
+    </div>
+  </footer>
+
+  <!-- reserve-command modal -->
+  <div class="modal hidden" id="cmd-modal" role="dialog" aria-modal="true" aria-labelledby="cmd-title">
+    <div class="modal-card">
+      <h3 id="cmd-title">One request books it</h3>
+      <p class="muted">That table is held live for your slot. Send this with your JWT to confirm:</p>
+      <pre id="cmd-text" tabindex="0"></pre>
+      <ol class="next-steps">
+        <li><b>Send it</b> with your JWT — the table is checked again at confirm time.</li>
+        <li><b>The house confirms</b>, usually within the hour, from PENDING to APPROVED.</li>
+        <li><b>Show up hungry</b> — pay at the table, then rate the visit.</li>
+      </ol>
+      <div class="modal-actions">
+        <button class="btn btn-red" id="cmd-copy">Copy command</button>
+        <button class="btn btn-ghost" id="cmd-close">Close</button>
+      </div>
+      <p class="fine">No account yet? <a href="/swagger-ui/index.html" target="_blank" rel="noopener">Register in Swagger</a>, then retry with your token.</p>
+    </div>
+  </div>
+
+  <div class="toast hidden" id="toast" role="status"></div>
+
+  <script src="/app.js"></script>
+</body>
+</html>
